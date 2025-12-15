@@ -1,9 +1,10 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const UserModel = require("../models/User");
+const dotenv = require("dotenv");
+dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET
-const salt = bcrypt.genSaltSync(10);
+const secret = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
   try {
@@ -21,9 +22,8 @@ exports.register = async (req, res) => {
         message: "Username is already used",
       });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+    const salt = bcrypt.genSaltSync(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
     await UserModel.create({
       username,
       password: hashedPassword,
@@ -39,57 +39,52 @@ exports.register = async (req, res) => {
   }
 };
 
-
 exports.login = async (req, res) => {
+  //2.username is existed?
+  //3. compare password
+  //4. generate token
+
   try {
+    //1.check username & password
+    //การสลายโครงสร้าง
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({
-        message: "Username or Password are missing",
+      return res.status(400).send({
+        message: "Username or Password are missing!!, please provide",
       });
     }
 
     //มีผู้ใช้งานในระบบนี้ไหม
-    const user = await UserModel.findOne({ username });
-    if (!user) {
-      return res.status(404).json({
+    const userDoc = await UserModel.findOne({ username });
+    if (!userDoc) {
+      return res.status(404).send({
         message: "User not found",
       });
     }
 
     //ตรวจสอบรหัสผ่าน
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isPasswordMatched = await bcrypt.compare(password, userDoc.password);
 
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        message: "Invalid password",
+    //status 401
+    if (!isPasswordMatched) {
+      return res.status(401).send({
+        message: "Invalid credentials",
       });
     }
 
-    //สร้าง token จะถูกใช้ยืนยันตัวตนแทนการ login ซ้ำทุกครั้ง กำหนดอายุ Token = 24 ชั่วโมง
-    const token = jwt.sign(
-      { id: user._id, username: user.username },
-      JWT_SECRET,
-      { expiresIn: "24h" }
-    );
-
-    //ส่งผลลัพธ์ไปใให้ผู้ใช้ว่า เข้าสู่ระบบเรียบร้อยร้อยพร้อม token
-    return res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-      },
+    //สร้าง token
+    jwt.sign({ username, id: userDoc._id }, secret, {}, (err, token) => {
+      if (err) {
+        res
+          .status(500)
+          .send({ message: "Internal Serve Error: Authentication failed!" });
+      }
+      res.send({ message: "Logged in successful", accessToken: token });
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message || "Error while login",
+    return res.status(500).send({
+      message: error.message || "Error while registering user",
     });
   }
 };
-

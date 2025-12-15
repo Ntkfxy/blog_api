@@ -5,11 +5,14 @@ const cors = require("cors");
 const PORT = process.env.PORT;
 const DB_URL = process.env.DB_URL;
 const BASE_URL = process.env.BASE_URL;
+const UserRouter = require("./routers/user.router");
+const PostRouter = require("./routers/post.router");
 
 const app = express();
 
 app.use(express.json());
-app.use(cors({ origin: BASE_URL, methods: ["GET", "POST", "PUT", "DELETE"] })); //อนุญาติบาง method ใช้แบบนี้ได้
+app.use(cors({ origin: BASE_URL, methods: ["GET", "POST", "PUT", "DELETE"] }));
+//อนุญาติบาง method ใช้แบบนี้ได้
 app.get("/", (req, res) => {
   res.send("<h1>Welcome to SE NPRU Restful API </h1>");
 });
@@ -27,6 +30,10 @@ if (!DB_URL) {
       console.error("MongoDB connection error", error.message);
     });
 }
+
+//Router
+app.use("/api/v1/user", UserRouter);
+app.use("/api/v1/post", PostRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
