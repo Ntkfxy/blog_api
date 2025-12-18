@@ -33,7 +33,7 @@ if (!DB_URL) {
 
 //Router
 app.use("/api/v1/user", UserRouter);
-app.use("/api/v1/post", PostRouter);
+app.use("/api/v1/posts", PostRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
