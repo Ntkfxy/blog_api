@@ -1,10 +1,14 @@
 const PostModel = require("../models/Post");
 
 exports.createPost = async (req, res) => {
-  const { title, cover, summary, content } = req.body;
+  if (!req.file) {
+    return res.status(400).json({ message: " Images is required" });
+  }
+
+  const { title, summary, content } = req.body;
   const authorId = req.authorId;
 
-  if (!title || !cover  || !summary || !content) {
+  if (!title || !summary || !content) {
     return res.status(400).send({
       message: "Please provide all fields",
     });
@@ -19,7 +23,7 @@ exports.createPost = async (req, res) => {
 
     const postDoc = await PostModel.create({
       title,
-      cover,
+      file: req.cover.firebaseURL,
       author: authorId,
       summary,
       content,
@@ -94,7 +98,7 @@ exports.getByAuthorID = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(20);
 
-    if (!posts) {
+    if (!posts.length) {
       return res.status(404).send({ message: "Post not found" });
     }
 
@@ -116,7 +120,7 @@ exports.updatePost = async (req, res) => {
   }
   try {
     const { title, cover, summary, content } = req.body;
-    if (!title && !cover && !summary && !content ) {
+    if (!title && !cover && !summary && !content) {
       return res.status(400).send({ message: "Please provide al fields" });
     }
 
@@ -159,15 +163,18 @@ exports.updatePost = async (req, res) => {
 
 exports.deletePost = async (req, res) => {
   const { id } = req.params;
-   const authorId = req.authorId;
+  const authorId = req.authorId;
   if (!id) {
     return res.status(400).send({
       message: "Post ID is missing",
     });
   }
-  
+
   try {
-    const postDoc = await PostModel.findOneAndDelete({ author: authorId, _id: id });
+    const postDoc = await PostModel.findOneAndDelete({
+      author: authorId,
+      _id: id,
+    });
     if (!postDoc) {
       return res.status(500).send({ message: "Cannot delete  this post" });
     }

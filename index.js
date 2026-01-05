@@ -8,6 +8,7 @@ const BASE_URL = process.env.BASE_URL;
 const UserRouter = require("./routers/user.router");
 const PostRouter = require("./routers/post.router");
 
+
 const app = express();
 
 app.use(express.json());

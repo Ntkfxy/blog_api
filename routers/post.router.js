@@ -3,7 +3,14 @@ const router = express.Router();
 const postController = require("../controllers/post.controller");
 const authJwt = require("../middlewares/authJWT.middleware");
 
-router.post("/create", authJwt.verifyToken, postController.createPost);
+const {upload, uploadToFirebase} = require("../middlewares/file.middleware")
+
+
+router.post("/create", 
+    upload,
+    uploadToFirebase,
+    authJwt.verifyToken, 
+    postController.createPost);
 
 router.get("/", postController.getAllPost);
 router.get("/:id", postController.getByID);
