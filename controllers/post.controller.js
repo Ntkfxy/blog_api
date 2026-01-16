@@ -1,10 +1,13 @@
 const PostModel = require("../models/Post");
 
+
 exports.createPost = async (req, res) => {
+   console.log("AUTHOR ID:", req.authorId);
   if (!req.file) {
     return res.status(400).json({ message: " Images is required" });
   }
 
+  //ดึง data ข้อมูลมา
   const { title, summary, content } = req.body;
   const authorId = req.authorId;
 
@@ -23,10 +26,10 @@ exports.createPost = async (req, res) => {
 
     const postDoc = await PostModel.create({
       title,
-      file: req.cover.firebaseURL,
-      author: authorId,
       summary,
       content,
+      cover: req.file.supabaseUrl,
+      author: authorId,
     });
     if (!postDoc) {
       return res.status(404).send({ message: "Cannot create a new post" });
@@ -42,6 +45,8 @@ exports.createPost = async (req, res) => {
     });
   }
 };
+
+
 
 exports.getAllPost = async (req, res) => {
   try {

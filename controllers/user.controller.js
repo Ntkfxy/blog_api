@@ -68,6 +68,7 @@ exports.login = async (req, res) => {
     }
 
     // ✅ สร้าง token
+    //มีพารามิเตอร์คือ object (id, username) , secret, object defalut
     const token = jwt.sign(
       { id: userDoc._id, username: userDoc.username },
       secret,
@@ -87,3 +88,5 @@ exports.login = async (req, res) => {
     });
   }
 };
+
+
