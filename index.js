@@ -8,6 +8,7 @@ const BASE_URL = process.env.BASE_URL;
 const UserRouter = require("./routers/user.router");
 const PostRouter = require("./routers/post.router");
 
+console.log("🔥 SERVER FILE LOADED 🔥");
 
 const app = express();
 
@@ -34,7 +35,9 @@ if (!DB_URL) {
 
 //Router
 app.use("/api/v1/user", UserRouter);
-app.use("/api/v1/posts", PostRouter);
+console.log("🔥 BEFORE POST ROUTER");
+app.use("/api/v1/post", PostRouter);
+console.log("🔥 AFTER POST ROUTER");
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

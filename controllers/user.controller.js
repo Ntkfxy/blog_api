@@ -40,22 +40,15 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  //2.username is existed?
-  //3. compare password
-  //4. generate token
-
   try {
-    //1.check username & password
-    //การสลายโครงสร้าง
     const { username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).send({
-        message: "Username or Password are missing!!, please provide",
+        message: "Username or Password are missing",
       });
     }
 
-    //มีผู้ใช้งานในระบบนี้ไหม
     const userDoc = await UserModel.findOne({ username });
     if (!userDoc) {
       return res.status(404).send({
@@ -63,28 +56,34 @@ exports.login = async (req, res) => {
       });
     }
 
-    //ตรวจสอบรหัสผ่าน
-    const isPasswordMatched = await bcrypt.compare(password, userDoc.password);
+    const isPasswordMatched = await bcrypt.compare(
+      password,
+      userDoc.password
+    );
 
-    //status 401
     if (!isPasswordMatched) {
       return res.status(401).send({
         message: "Invalid credentials",
       });
     }
 
-    //สร้าง token
-    jwt.sign({ username, id: userDoc._id }, secret, {}, (err, token) => {
-      if (err) {
-        res
-          .status(500)
-          .send({ message: "Internal Serve Error: Authentication failed!" });
-      }
-      res.send({ message: "Logged in successful", accessToken: token });
+    // ✅ สร้าง token
+    const token = jwt.sign(
+      { id: userDoc._id, username: userDoc.username },
+      secret,
+      { expiresIn: "1d" }
+    );
+
+    // ✅ ส่งข้อมูลให้ frontend ครบ
+    return res.status(200).send({
+      message: "Login successful",
+      id: userDoc._id,
+      username: userDoc.username,
+      accessToken: token,
     });
   } catch (error) {
     return res.status(500).send({
-      message: error.message || "Error while registering user",
+      message: error.message || "Login error",
     });
   }
 };

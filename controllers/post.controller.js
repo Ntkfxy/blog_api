@@ -45,16 +45,16 @@ exports.createPost = async (req, res) => {
 
 exports.getAllPost = async (req, res) => {
   try {
-    const posts = await PostModel.find()
+    const post = await PostModel.find()
       .populate("author", "username")
       .sort({ createdAt: -1 })
       .limit(20);
 
-    if (!posts.length) {
+    if (!post.length) {
       return res.status(404).send({ message: "Post not found" });
     }
 
-    res.send(posts);
+    res.send(post);
   } catch (error) {
     res.status(500).send({
       message: error.message || "Something error while retrieving the post",
@@ -93,16 +93,16 @@ exports.getByAuthorID = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const posts = await PostModel.find({ author: id })
+    const post = await PostModel.find({ author: id })
       .populate("author", ["username"])
       .sort({ createdAt: -1 })
       .limit(20);
 
-    if (!posts.length) {
+    if (!post.length) {
       return res.status(404).send({ message: "Post not found" });
     }
 
-    res.send(posts);
+    res.send(post);
   } catch (error) {
     res.status(500).send({
       message: error.message || "Something error while retrieving the post",
