@@ -1,90 +1,76 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const UserModel = require("../models/User");
-const dotenv = require("dotenv");
-dotenv.config();
+require("dotenv").config();
 
 const secret = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).send({
+      message: "Please provide username and password",
+    });
+  }
+  const existingUser = await UserModel.findOne({ username });
+  if (existingUser) {
+    return res.status(400).send({
+      message: "This username is already existed",
+    });
+  }
+
   try {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).send({
-        message: "Please provide username and password",
-      });
-    }
-
-    const existingUser = await UserModel.findOne({ username });
-    if (existingUser) {
-      return res.status(400).send({
-        message: "Username is already used",
-      });
-    }
     const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    await UserModel.create({
+    const hashedPassword = bcrypt.hashSync(password, salt);
+    const user = await UserModel.create({
       username,
       password: hashedPassword,
     });
-
-    return res.send({
+    res.status(201).send({
       message: "User registered successfully",
     });
   } catch (error) {
-    return res.status(500).send({
-      message: error.message || "Error while registering user",
+    res.status(500).send({
+      message:
+        error.message || "Some errors occurred while registering a new user",
     });
   }
 };
 
 exports.login = async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).send({
+      message: "Please provide username and password",
+    });
+  }
   try {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.status(400).send({
-        message: "Username or Password are missing",
-      });
-    }
-
     const userDoc = await UserModel.findOne({ username });
     if (!userDoc) {
-      return res.status(404).send({
-        message: "User not found",
-      });
+      return res.status(404).send({ message: "User not found" });
     }
-
-    const isPasswordMatched = await bcrypt.compare(
-      password,
-      userDoc.password
-    );
-
+    const isPasswordMatched = bcrypt.compareSync(password, userDoc.password);
     if (!isPasswordMatched) {
-      return res.status(401).send({
-        message: "Invalid credentials",
-      });
+      return res.status(401).send({ message: "Invalid credentials" });
     }
-
-    // ✅ สร้าง token
-    //มีพารามิเตอร์คือ object (id, username) , secret, object defalut
-    const token = jwt.sign(
-      { id: userDoc._id, username: userDoc.username },
-      secret,
-      { expiresIn: "1d" }
-    );
-
-    // ✅ ส่งข้อมูลให้ frontend ครบ
-    return res.status(200).send({
-      message: "Login successful",
-      id: userDoc._id,
-      username: userDoc.username,
-      accessToken: token,
+    //login successfully
+    jwt.sign({ username, id: userDoc._id }, secret, {}, (err, token) => {
+      if (err) {
+        return res.status(500).send({
+          message: "Internal server error: Authentication failed",
+        });
+      }
+      //token generation
+      res.send({
+        message: "User logged in successfully",
+        id: userDoc._id,
+        username,
+        accessToken: token,
+      });
     });
   } catch (error) {
-    return res.status(500).send({
-      message: error.message || "Login error",
+    res.status(500).send({
+      message: error.message || "Some errors occurred while logging in user",
     });
   }
 };

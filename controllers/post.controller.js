@@ -2,7 +2,7 @@ const PostModel = require("../models/Post");
 
 
 exports.createPost = async (req, res) => {
-   console.log("AUTHOR ID:", req.authorId);
+   
   if (!req.file) {
     return res.status(400).json({ message: " Images is required" });
   }
@@ -50,22 +50,19 @@ exports.createPost = async (req, res) => {
 
 exports.getAllPost = async (req, res) => {
   try {
-    const post = await PostModel.find()
-      .populate("author", "username")
+    const posts = await PostModel.find()
+      .populate("author", ["username"])
       .sort({ createdAt: -1 })
       .limit(20);
 
-    if (!post.length) {
-      return res.status(404).send({ message: "Post not found" });
-    }
-
-    res.send(post);
+    res.status(200).json(posts);
   } catch (error) {
-    res.status(500).send({
-      message: error.message || "Something error while retrieving the post",
+    res.status(500).json({
+      message: error.message || "เกิดข้อผิดพลาดในการดึงข้อมูลโพสต์",
     });
   }
 };
+
 
 exports.getByID = async (req, res) => {
   // ต้นทางที่มาสถานะเป็นอะไรถึงจะระบุ array กับ object
@@ -77,16 +74,16 @@ exports.getByID = async (req, res) => {
   }
 
   try {
-    const post = await PostModel.findById(id)
+    const posts = await PostModel.findById(id)
       .populate("author", ["username"])
-      .sort({ createAt: -1 })
-      .limit(20);
+      // .sort({ createAt: -1 })
+      // .limit(20);
 
-    if (!post) {
+    if (!posts) {
       return res.status(404).send({ message: "Post not found" });
     }
 
-    res.send(post);
+    res.send(posts);
   } catch (error) {
     res.status(500).send({
       message: error.message || "Something error while retrieving the post",
@@ -94,23 +91,28 @@ exports.getByID = async (req, res) => {
   }
 };
 
-exports.getByAuthorID = async (req, res) => {
+exports.getByAuthorId = async (req, res) => {
   const { id } = req.params;
-
+  if (!id) {
+    return res.status(400).send({
+      message: "Author id is missing",
+    });
+  }
   try {
-    const post = await PostModel.find({ author: id })
+    const posts = await PostModel.find({ author: id })
       .populate("author", ["username"])
       .sort({ createdAt: -1 })
       .limit(20);
-
-    if (!post.length) {
-      return res.status(404).send({ message: "Post not found" });
+    if (!posts) {
+      return res.status(404).send({
+        message: "Post not found",
+      });
     }
-
-    res.send(post);
+    res.send(posts);
   } catch (error) {
     res.status(500).send({
-      message: error.message || "Something error while retrieving the post",
+      message:
+        error.message || "Some errors occurred while registering a new user",
     });
   }
 };
@@ -118,73 +120,72 @@ exports.getByAuthorID = async (req, res) => {
 exports.updatePost = async (req, res) => {
   const { id } = req.params;
   const authorId = req.authorId;
+
   if (!id) {
     return res.status(400).send({
-      message: "Post ID is missing",
+      message: "Post Id is missing",
     });
   }
+
+  const { title, summary, content, cover } = req.body;
+  if (!title || !summary || !content || !cover) {
+    return res.status(400).send({
+      message: "Please provide all fields",
+    });
+  }
+
   try {
-    const { title, cover, summary, content } = req.body;
-    if (!title && !cover && !summary && !content) {
-      return res.status(400).send({ message: "Please provide al fields" });
-    }
+    const postDoc = await PostModel.findOne({
+      _id: id,
+      author: authorId,
+    });
 
-    const postDoc = await PostModel.findOne({ _id: id, author: authorId });
     if (!postDoc) {
-      return res
-        .status(400)
-        .send({ message: " Post with this author id is not found" });
-    }
-    if (postDoc.length === 0) {
       return res.status(403).send({
-        message:
-          "Unauthorize to edit this post, because you are not the author of this post",
+        message: "คุณไม่มีสิทธิ์แก้ไขโพสต์นี้ หรือไม่พบโพสต์",
       });
-    } else {
-      // postDoc.title = title;
-      // postDoc.cover = cover;
-      // postDoc.summary = summary;
-      // postDoc.content = content;
-      // await postDoc.save();
-
-      const newPost = await PostModel.findOneAndUpdate(
-        { author: authorId, _id: id },
-        { title, cover, summary, content },
-        {
-          new: true,
-        }
-      );
-      if (!newPost) {
-        return res.status(500).send({ message: "Cannot update this post" });
-      }
-      res.send({ message: "Post update Successfully!!" });
     }
+
+    const newPost = await PostModel.findOneAndUpdate(
+      { _id: id, author: authorId },
+      { title, summary, content, cover },
+      { new: true }
+    );
+
+    res.status(200).send({
+      message: "Post updated successfully",
+      data: newPost,
+    });
   } catch (error) {
     res.status(500).send({
-      message: error.message || "Something error while retrieving the post",
+      message: error.message || "เกิดข้อผิดพลาดในการแก้ไขโพสต์",
     });
   }
 };
 
+
 exports.deletePost = async (req, res) => {
   const { id } = req.params;
   const authorId = req.authorId;
+
   if (!id) {
     return res.status(400).send({
-      message: "Post ID is missing",
+      message: "Post Id is missing",
     });
   }
-
   try {
     const postDoc = await PostModel.findOneAndDelete({
       author: authorId,
       _id: id,
     });
     if (!postDoc) {
-      return res.status(500).send({ message: "Cannot delete  this post" });
+      return res.status(404).send({ message: "Cannot delete this post" });
     }
-    res.send({ message: "Post delete Successfully!!" });
+    res.send({ message: "Post deleted successfully" });
   } catch (error) {
-    res.status(500).send({ message: error.message || "Failed to delete post" });
+    return res.status(500).send({
+      message:
+        error.message || "Some errors occurred while registering a new user",
+    });
   }
 };

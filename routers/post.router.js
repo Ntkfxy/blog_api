@@ -12,15 +12,15 @@ console.log("🔥 POST ROUTER FILE LOADED 🔥");
 
 // CREATE
 router.post(
-  "/",
+  "/create",
   authJwt.verifyToken,
   upload,
   uploadToSupabase,
   postController.createPost
 );
 
-// READ
-router.get("/author/:id", postController.getByAuthorID); // ✅ ต้องอยู่ก่อน
+// READ   
+router.get("/author/:id", postController.getByAuthorId); // ✅ ต้องอยู่ก่อน
 router.get("/", postController.getAllPost); // GET /api/v1/post
 router.get("/:id", postController.getByID); // GET /api/v1/post/:id
 
